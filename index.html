@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grammar Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 10px;
+            transition: color 0.3s ease;
+        }
+
+        .char-counter.warning {
+            color: #ff6b6b;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e1e5e9;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+            border-left: 4px solid #667eea;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .results h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .corrected-text {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            font-family: inherit;
+        }
+
+        .error {
+            background: #fee;
+            border-left-color: #ff6b6b;
+            color: #c53030;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            textarea {
+                min-height: 150px;
+                padding: 15px;
+            }
+
+            button {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Grammar Checker</h1>
+        <p class="subtitle">AI-powered grammar correction using Hugging Face models</p>
+
+        <div class="input-section">
+            <div class="char-counter" id="charCounter">0 / 300 words</div>
+            <textarea 
+                id="textInput" 
+                placeholder="Paste your text here (up to 300 words) and get instant grammar corrections..."
+                maxlength="2000"
+            ></textarea>
+        </div>
+
+        <div class="button-container">
+            <button id="checkBtn" onclick="checkGrammar()">
+                ✨ Check Grammar
+            </button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <span>Analyzing your text...</span>
+        </div>
+
+        <div class="results" id="results">
+            <h3>✅ Corrected Text</h3>
+            <div class="corrected-text" id="correctedText"></div>
+        </div>
+
+        <div class="footer">
+            <p>Powered by <a href="https://huggingface.co" target="_blank">🤗 Hugging Face</a> | 
+            <a href="https://github.com" target="_blank">GitHub Pages</a> | 
+            <span style="color: #28a745;">✓ No API Key Required</span></p>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('textInput');
+        const charCounter = document.getElementById('charCounter');
+        const checkBtn = document.getElementById('checkBtn');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const correctedText = document.getElementById('correctedText');
+
+        // Hugging Face API configuration - using free inference API
+        const HF_MODELS = [
+            'microsoft/DialoGPT-medium',
+            'facebook/blenderbot-400M-distill',
+            'gpt2'
+        ];
+        let currentModelIndex = 0;
+
+        // Word count and validation
+        textInput.addEventListener('input', function() {
+            const text = this.value;
+            const wordCount = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+            
+            charCounter.textContent = `${wordCount} / 300 words`;
+            
+            if (wordCount > 300) {
+                charCounter.classList.add('warning');
+                checkBtn.disabled = true;
+            } else {
+                charCounter.classList.remove('warning');
+                checkBtn.disabled = false;
+            }
+
+            // Hide results when text changes
+            results.classList.remove('active');
+        });
+
+        // Grammar correction rules for automated processing
+        const grammarRules = [
+            // Common grammar fixes
+            { pattern: /\bi\b/g, replacement: 'I' },
+            { pattern: /\bim\b/gi, replacement: 'I\'m' },
+            { pattern: /\bdont\b/gi, replacement: 'don\'t' },
+            { pattern: /\bcant\b/gi, replacement: 'can\'t' },
+            { pattern: /\bwont\b/gi, replacement: 'won\'t' },
+            { pattern: /\bisnt\b/gi, replacement: 'isn\'t' },
+            { pattern: /\barent\b/gi, replacement: 'aren\'t' },
+            { pattern: /\bwasnt\b/gi, replacement: 'wasn\'t' },
+            { pattern: /\bwerent\b/gi, replacement: 'weren\'t' },
+            { pattern: /\bhasnt\b/gi, replacement: 'hasn\'t' },
+            { pattern: /\bhavent\b/gi, replacement: 'haven\'t' },
+            { pattern: /\bhadnt\b/gi, replacement: 'hadn\'t' },
+            { pattern: /\bwouldnt\b/gi, replacement: 'wouldn\'t' },
+            { pattern: /\bcouldnt\b/gi, replacement: 'couldn\'t' },
+            { pattern: /\bshouldnt\b/gi, replacement: 'shouldn\'t' },
+            
+            // Double spaces
+            { pattern: /\s+/g, replacement: ' ' },
+            
+            // Sentence case after periods
+            { pattern: /\.\s+([a-z])/g, replacement: (match, p1) => '. ' + p1.toUpperCase() },
+            
+            // Common misspellings
+            { pattern: /\bteh\b/gi, replacement: 'the' },
+            { pattern: /\brecieve\b/gi, replacement: 'receive' },
+            { pattern: /\baccommodate\b/gi, replacement: 'accommodate' },
+            { pattern: /\boccur\b/gi, replacement: 'occur' },
+            { pattern: /\bneccessary\b/gi, replacement: 'necessary' },
+            { pattern: /\bbeginning\b/gi, replacement: 'beginning' },
+            { pattern: /\bcommittee\b/gi, replacement: 'committee' },
+            { pattern: /\bdefinitely\b/gi, replacement: 'definitely' },
+            { pattern: /\bexistence\b/gi, replacement: 'existence' },
+            { pattern: /\bgovernment\b/gi, replacement: 'government' },
+            { pattern: /\bindependence\b/gi, replacement: 'independence' },
+            { pattern: /\bmaintenance\b/gi, replacement: 'maintenance' },
+            { pattern: /\boccasion\b/gi, replacement: 'occasion' },
+            { pattern: /\bprivilege\b/gi, replacement: 'privilege' },
+            { pattern: /\bseparate\b/gi, replacement: 'separate' }
+        ];
+
+        async function checkGrammar() {
+            const text = textInput.value.trim();
+            
+            if (!text) {
+                alert('Please enter some text to check.');
+                return;
+            }
+
+            // Show loading state
+            checkBtn.disabled = true;
+            loading.classList.add('active');
+            results.classList.remove('active');
+
+            try {
+                // First try local grammar correction
+                let corrected = await performLocalGrammarCheck(text);
+                
+                // If local correction doesn't make significant changes, try AI
+                if (getChangesCount(text, corrected) < 3) {
+                    corrected = await performAIGrammarCheck(text) || corrected;
+                }
+
+                showResults(corrected);
+
+            } catch (error) {
+                console.error('Error:', error);
+                // Fallback to local grammar check only
+                const localCorrected = performLocalGrammarCheck(text);
+                showResults(localCorrected);
+            } finally {
+                // Hide loading state
+                loading.classList.remove('active');
+                checkBtn.disabled = false;
+            }
+        }
+
+        function performLocalGrammarCheck(text) {
+            let corrected = text;
+            
+            // Apply grammar rules
+            grammarRules.forEach(rule => {
+                corrected = corrected.replace(rule.pattern, rule.replacement);
+            });
+            
+            // Capitalize first letter of text
+            corrected = corrected.charAt(0).toUpperCase() + corrected.slice(1);
+            
+            // Ensure proper sentence endings
+            corrected = corrected.trim();
+            if (!/[.!?]$/.test(corrected)) {
+                corrected += '.';
+            }
+            
+            return corrected;
+        }
+
+        async function performAIGrammarCheck(text) {
+            // Try multiple models for better results
+            for (let i = 0; i < HF_MODELS.length; i++) {
+                const modelIndex = (currentModelIndex + i) % HF_MODELS.length;
+                const modelName = HF_MODELS[modelIndex];
+                
+                try {
+                    const response = await fetch(`https://api-inference.huggingface.co/models/${modelName}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            inputs: `Please correct the grammar in this text: "${text}"`,
+                            parameters: {
+                                max_length: Math.min(text.length * 2, 500),
+                                temperature: 0.3,
+                                do_sample: true,
+                                return_full_text: false
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data && data[0] && data[0].generated_text) {
+                            let result = data[0].generated_text.trim();
+                            
+                            // Clean up the response
+                            result = result.replace(/^(Please correct the grammar in this text:|Fix grammar:|Corrected text:)\s*["']?/i, '');
+                            result = result.replace(/["']?$/, '');
+                            
+                            if (result.length > 10 && result.length < text.length * 3) {
+                                currentModelIndex = (currentModelIndex + 1) % HF_MODELS.length;
+                                return result;
+                            }
+                        }
+                    }
+                } catch (modelError) {
+                    console.log(`Model ${modelName} failed, trying next...`);
+                    continue;
+                }
+            }
+            
+            return null; // All models failed
+        }
+
+        function getChangesCount(original, corrected) {
+            const originalWords = original.toLowerCase().split(/\s+/);
+            const correctedWords = corrected.toLowerCase().split(/\s+/);
+            let changes = 0;
+            
+            for (let i = 0; i < Math.max(originalWords.length, correctedWords.length); i++) {
+                if (originalWords[i] !== correctedWords[i]) {
+                    changes++;
+                }
+            }
+            
+            return changes;
+        }
+
+        function showResults(corrected) {
+            correctedText.textContent = corrected;
+            results.classList.remove('error');
+            results.classList.add('active');
+        }
+
+        function showError(message) {
+            correctedText.textContent = message;
+            results.classList.add('error');
+            results.classList.add('active');
+        }
+
+        // Enter key support
+        textInput.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                checkGrammar();
+            }
+        });
+
+        // Initial focus
+        textInput.focus();
+    </script>
+</body>
+</html>
